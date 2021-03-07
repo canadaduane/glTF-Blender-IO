@@ -172,6 +172,7 @@ def __gather_targets(blender_primitive, blender_mesh, modifiers, export_settings
                         component_type=gltf2_io_constants.ComponentType.Float,
                         data_type=gltf2_io_constants.DataType.Vec3,
                         include_max_and_min=True,
+                        try_sparse_accessor=True,
                     )
 
                     if export_settings[NORMALS] \
@@ -183,6 +184,7 @@ def __gather_targets(blender_primitive, blender_mesh, modifiers, export_settings
                             internal_target_normal,
                             component_type=gltf2_io_constants.ComponentType.Float,
                             data_type=gltf2_io_constants.DataType.Vec3,
+                            try_sparse_accessor=True,
                         )
 
                     if export_settings[TANGENTS] \
@@ -193,6 +195,7 @@ def __gather_targets(blender_primitive, blender_mesh, modifiers, export_settings
                             internal_target_tangent,
                             component_type=gltf2_io_constants.ComponentType.Float,
                             data_type=gltf2_io_constants.DataType.Vec3,
+                            try_sparse_accessor=True,
                         )
                     targets.append(target)
                     morph_index += 1

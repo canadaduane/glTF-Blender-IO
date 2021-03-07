@@ -20,6 +20,7 @@ import mathutils
 from io_scene_gltf2.blender.com import gltf2_blender_math
 from io_scene_gltf2.blender.com.gltf2_blender_data_path import get_target_property_name, get_target_object_path
 from io_scene_gltf2.blender.exp import gltf2_blender_gather_animation_sampler_keyframes
+from io_scene_gltf2.blender.exp import gltf2_blender_gather_primitive_attributes
 from io_scene_gltf2.blender.exp.gltf2_blender_gather_cache import cached
 from io_scene_gltf2.blender.exp import gltf2_blender_gather_accessors
 from io_scene_gltf2.blender.exp import gltf2_blender_get
@@ -401,6 +402,15 @@ def __gather_output(channels: typing.Tuple[bpy.types.FCurve],
         data_type = gltf2_io_constants.DataType.Scalar
     else:
         data_type = gltf2_io_constants.DataType.vec_type_from_num(len(keyframes[0].value))
+
+    if get_target_property_name(target_datapath) == "value":
+        # Try a sparse encoding for morph weight animations
+        return gltf2_blender_gather_primitive_attributes.array_to_accessor(
+            array=values,
+            component_type=component_type,
+            data_type=data_type,
+            try_sparse_accessor=True,
+        )
 
     return gltf2_io.Accessor(
         buffer_view=gltf2_io_binary_data.BinaryData.from_list(values, component_type),

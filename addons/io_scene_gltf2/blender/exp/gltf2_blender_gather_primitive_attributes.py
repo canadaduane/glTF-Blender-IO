@@ -37,7 +37,13 @@ def gather_primitive_attributes(blender_primitive, export_settings):
     return attributes
 
 
-def array_to_accessor(array, component_type, data_type, include_max_and_min=False):
+def array_to_accessor(
+    array,
+    component_type,
+    data_type,
+    include_max_and_min=False,
+    try_sparse_accessor=False,
+):
     dtype = gltf2_io_constants.ComponentType.to_numpy_dtype(component_type)
     num_elems = gltf2_io_constants.DataType.num_elements(data_type)
 
@@ -54,6 +60,17 @@ def array_to_accessor(array, component_type, data_type, include_max_and_min=Fals
         amax = np.amax(array, axis=0).tolist()
         amin = np.amin(array, axis=0).tolist()
 
+    if try_sparse_accessor:
+        sparse_accessor = __try_sparse_accessor(
+            array,
+            component_type,
+            data_type,
+            amax,
+            amin,
+        )
+        if sparse_accessor is not None:
+            return sparse_accessor
+
     return gltf2_io.Accessor(
         buffer_view=gltf2_io_binary_data.BinaryData(array.tobytes()),
         byte_offset=None,
@@ -67,6 +84,97 @@ def array_to_accessor(array, component_type, data_type, include_max_and_min=Fals
         normalized=None,
         sparse=None,
         type=data_type,
+    )
+
+
+def __try_sparse_accessor(
+    array,
+    component_type,
+    data_type,
+    amax,
+    amin,
+):
+    """Encodes a sparse accessor, but gives None if dense would be smaller."""
+    if array.shape[1] == 1:
+        indices_nonzero = np.flatnonzero(array)  # fast path for 1D arrays
+    else:
+        indices_nonzero = np.flatnonzero(np.any(array, axis=1))
+
+    num_nonzero = len(indices_nonzero)
+
+    if num_nonzero == 0:
+        # All zero => no bufferView, no sparse
+        return gltf2_io.Accessor(
+            buffer_view=None,
+            byte_offset=None,
+            component_type=component_type,
+            count=len(array),
+            extensions=None,
+            extras=None,
+            max=amax,
+            min=amin,
+            name=None,
+            normalized=None,
+            sparse=None,
+            type=data_type,
+        )
+
+    index_size = (
+        1 if indices_nonzero[-1] < 256 else
+        2 if indices_nonzero[-1] < 65536 else
+        4
+    )
+    value_size = array.shape[1] * array.dtype.itemsize
+
+    dense_bin_size = len(array) * value_size
+    sparse_bin_size = num_nonzero * (index_size + value_size)
+    bin_size_increase = sparse_bin_size - dense_bin_size
+    json_size_increase = 160  # approximate
+    net_size_increase = bin_size_increase + json_size_increase
+
+    if net_size_increase >= 0:
+        # Dense is better
+        return None
+
+    index_type = (
+        gltf2_io_constants.ComponentType.UnsignedByte if index_size == 1 else
+        gltf2_io_constants.ComponentType.UnsignedShort if index_size == 2 else
+        gltf2_io_constants.ComponentType.UnsignedInt
+    )
+    index_dtype = gltf2_io_constants.ComponentType.to_numpy_dtype(index_type)
+    indices_nonzero = indices_nonzero.astype(index_dtype)
+    values_nonzero = array[indices_nonzero]
+
+    return gltf2_io.Accessor(
+        buffer_view=None,
+        byte_offset=None,
+        component_type=component_type,
+        count=len(array),
+        extensions=None,
+        extras=None,
+        max=amax,
+        min=amin,
+        name=None,
+        normalized=None,
+        type=data_type,
+        sparse=gltf2_io.AccessorSparse(
+            count=num_nonzero,
+            indices=gltf2_io.AccessorSparseIndices(
+                buffer_view=gltf2_io_binary_data.BinaryData(indices_nonzero.tobytes()),
+                component_type=index_type,
+                byte_offset=None,
+                extensions=None,
+                extras=None,
+            ),
+            values=gltf2_io.AccessorSparseValues(
+                buffer_view=gltf2_io_binary_data.BinaryData(values_nonzero.tobytes()),
+                byte_offset=None,
+                extensions=None,
+                extras=None,
+            ),
+            extensions=None,
+            extras=None,
+        ),
     )
 
 
