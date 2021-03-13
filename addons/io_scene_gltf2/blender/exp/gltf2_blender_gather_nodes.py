@@ -240,7 +240,7 @@ def __gather_extras(blender_object, export_settings):
     if export_settings['gltf_extras']:
         extras = generate_extras(blender_object) or {}
     if blender_object.face_maps:
-        extras['face_maps'] = [face_map.name for face_map in blender_object.face_maps]
+        extras['facemaps'] = [face_map.name for face_map in blender_object.face_maps]
     return extras or None
 
 
