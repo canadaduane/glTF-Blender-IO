@@ -313,13 +313,13 @@ def custom_data_array_to_accessor(array):
 def __gather_custom_data(blender_primitive, export_settings):
     attributes = {}
     for key in blender_primitive["attributes"]:
-        if key == 'FACEMAPS':
+        if key == '_FACEMAPS':
             attributes[key] = array_to_accessor(
                 blender_primitive["attributes"][key],
                 component_type=gltf2_io_constants.ComponentType.Float,
                 data_type=gltf2_io_constants.DataType.Scalar,
             )
-        elif key.startswith('_'):
+        elif key.startswith('_VG_'):
             attributes[key] = custom_data_array_to_accessor(
                 blender_primitive["attributes"][key],
             )

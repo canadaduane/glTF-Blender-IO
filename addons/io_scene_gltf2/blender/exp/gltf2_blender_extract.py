@@ -286,10 +286,10 @@ def extract_primitives(glTF, blender_mesh, library, blender_object, blender_vert
                 attributes['WEIGHTS_%d' % i] = ws
 
         for vgroup_name, weights in extra_vgroup_weights.items():
-            attributes['_' + vgroup_name] = weights[blender_idxs]
+            attributes['_VG_' + vgroup_name] = weights[blender_idxs]
 
         if use_facemaps:
-            attributes['FACEMAPS'] = prim_dots['facemaps']
+            attributes['_FACEMAPS'] = prim_dots['facemaps']
 
         primitives.append({
             'attributes': attributes,
