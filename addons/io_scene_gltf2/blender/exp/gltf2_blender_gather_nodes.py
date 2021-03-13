@@ -236,9 +236,12 @@ def __gather_extensions(blender_object, export_settings):
 
 
 def __gather_extras(blender_object, export_settings):
+    extras = {}
     if export_settings['gltf_extras']:
-        return generate_extras(blender_object)
-    return None
+        extras = generate_extras(blender_object) or {}
+    if blender_object.face_maps:
+        extras['face_maps'] = [face_map.name for face_map in blender_object.face_maps]
+    return extras or None
 
 
 def __gather_matrix(blender_object, export_settings):
